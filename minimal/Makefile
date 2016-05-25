@@ -1,6 +1,6 @@
 include ../py/mkenv.mk
 
-CROSS = 0
+CROSS = 1
 
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h
@@ -35,7 +35,7 @@ CFLAGS += -Os -DNDEBUG
 endif
 
 ifeq ($(CROSS), 1)
-LDFLAGS = -nostdlib -T stm32f405.ld -Map=$@.map --cref
+LDFLAGS = -nostdlib -T tm4c123gh6pm.lds -Map=$@.map --cref
 else
 LD = gcc
 LDFLAGS = -m32 -Wl,-Map=$@.map,--cref
