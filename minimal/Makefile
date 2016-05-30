@@ -1,6 +1,7 @@
 include ../py/mkenv.mk
 
 CROSS = 1
+DEBUG = 1
 
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h
@@ -55,7 +56,7 @@ SRC_C = \
 OBJ = $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 
 ifeq ($(CROSS), 1)
-all: $(BUILD)/firmware.dfu
+all: $(BUILD)/firmware.dfu $(BUILD)/micropython.out
 else
 all: $(BUILD)/firmware.elf
 endif
@@ -65,6 +66,11 @@ $(BUILD)/_frozen_mpy.c: frozentest.mpy $(BUILD)/genhdr/qstrdefs.generated.h
 	$(Q)../tools/mpy-tool.py -f -q $(BUILD)/genhdr/qstrdefs.preprocessed.h -mlongint-impl=none $< > $@
 
 $(BUILD)/firmware.elf: $(OBJ)
+	$(ECHO) "LINK $@"
+	$(Q)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(Q)$(SIZE) $@
+
+$(BUILD)/micropython.out: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(Q)$(SIZE) $@
