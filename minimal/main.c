@@ -2,12 +2,20 @@
 #include <stdio.h>
 #include <string.h>
 
+
+#include "py/mpconfig.h"
 #include "py/nlr.h"
 #include "py/compile.h"
 #include "py/runtime.h"
 #include "py/repl.h"
 #include "py/gc.h"
 #include "lib/utils/pyexec.h"
+
+#include "gccollect.h"
+#include "gchelper.h"
+
+void clock_init(void);
+
 
 void do_str(const char *src, mp_parse_input_kind_t input_kind) {
     mp_lexer_t *lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, src, strlen(src), 0);
@@ -29,12 +37,17 @@ void do_str(const char *src, mp_parse_input_kind_t input_kind) {
     }
 }
 
-static char *stack_top;
-static char heap[2048];
+//static char *stack_top;
+//static char heap[2048];
+static char heap[24 * 1024];
 
 int main(int argc, char **argv) {
-    int stack_dummy;
-    stack_top = (char*)&stack_dummy;
+    //int stack_dummy;
+    //stack_top = (char*)&stack_dummy;
+
+
+    uint32_t sp = gc_helper_get_sp();
+    gc_collect_init (sp);
 
     #if MICROPY_ENABLE_GC
     gc_init(heap, heap + sizeof(heap));
@@ -57,15 +70,15 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void gc_collect(void) {
-    // WARNING: This gc_collect implementation doesn't try to get root
-    // pointers from CPU registers, and thus may function incorrectly.
-    void *dummy;
-    gc_collect_start();
-    gc_collect_root(&dummy, ((mp_uint_t)stack_top - (mp_uint_t)&dummy) / sizeof(mp_uint_t));
-    gc_collect_end();
-    gc_dump_info();
-}
+//void gc_collect(void) {
+//    // WARNING: This gc_collect implementation doesn't try to get root
+//    // pointers from CPU registers, and thus may function incorrectly.
+//    void *dummy;
+//    gc_collect_start();
+//    gc_collect_root(&dummy, ((mp_uint_t)stack_top - (mp_uint_t)&dummy) / sizeof(mp_uint_t));
+//    gc_collect_end();
+//    gc_dump_info();
+//}
 
 mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
     return NULL;
@@ -228,18 +241,48 @@ typedef struct {
 //    volatile uint32_t PCTL;           // 0x4000453C - 0x4000453F
 } periph_gpio_t;
 
+//typedef struct {
+//    volatile uint32_t SR;
+//    volatile uint32_t DR;
+//    volatile uint32_t BRR;
+//    volatile uint32_t CR1;
+//} periph_uart_t;
+
+
 typedef struct {
-    volatile uint32_t SR;
     volatile uint32_t DR;
-    volatile uint32_t BRR;
-    volatile uint32_t CR1;
+    volatile uint32_t RSR_ECR;
+    volatile uint32_t _1[4];
+    volatile uint32_t FR;
+    volatile uint32_t _2;
+    volatile uint32_t IRLPR;
+    volatile uint32_t IBRD;
+    volatile uint32_t FBRD;
+    volatile uint32_t LCRH;
+    volatile uint32_t CTL;
+    volatile uint32_t IFLS;
+    volatile uint32_t IM;
+    volatile uint32_t RIS;
+    volatile uint32_t MIS;
+    volatile uint32_t ICR;
+    volatile uint32_t DMACTL;
+    volatile uint32_t _3[22];
+    volatile uint32_t ADDR9BIT;
+    volatile uint32_t AMASK9BIT;
 } periph_uart_t;
 
-#define USART1 ((periph_uart_t*) 0x40011000)
+#define UART0  ((periph_uart_t*) 0x4000C000)
+
 #define GPIOA  ((periph_gpio_t*) 0x40004000)
 #define GPIOB  ((periph_gpio_t*) 0x40005000)
+#define GPIOC  ((periph_gpio_t*) 0x40006000)
+#define GPIOD  ((periph_gpio_t*) 0x40007000)
+#define GPIOE  ((periph_gpio_t*) 0x40024000)
+#define GPIOF  ((periph_gpio_t*) 0x40025000)
 
 
+#define RCGC0  ((unsigned int*)  0x400FE100)
+#define RCGC1  ((unsigned int*)  0x400FE104)
 #define RCGC2  ((unsigned int*)  0x400FE108)
 
 
@@ -265,6 +308,7 @@ void gpio_init(periph_gpio_t *gpio, int pin, int mode, int pull, int alt) {
 #define gpio_high(gpio, pin) do { gpio->DATA = (gpio->DATA | (1 << (pin))); } while (0)
 
 void stm32_init(void) {
+    //volatile unsigned int dummy;
     // basic MCU config
     //RCC->CR |= (uint32_t)0x00000001; // set HSION
     //RCC->CFGR = 0x00000000; // reset all
@@ -272,23 +316,96 @@ void stm32_init(void) {
     //RCC->PLLCFGR = 0x24003010; // reset PLLCFGR
     //RCC->CR &= (uint32_t)0xfffbffff; // reset HSEBYP
     //RCC->CIR = 0x00000000; // disable IRQs
+    //
+
+
+    asm volatile ("cpsid i");
 
     //// leave the clock as-is (internal 16MHz)
 
     //// enable GPIO clocks
     //RCC->AHB1ENR |= 0x00000003; // GPIOAEN, GPIOBEN
-    *RCGC2 |= 0x03; 
+    *RCGC2 |= 0x3F; 
+    // Enable clock for UART0
+    *RCGC1 |= 1;
 
+    asm volatile ("nop");
+    asm volatile ("nop");
+    asm volatile ("nop");
+    asm volatile ("nop");
+    asm volatile ("nop");
+    asm volatile ("nop");
+    //dummy = ~1;
     //// turn on an LED! (on pyboard it's the red one)
     //gpio_init(GPIOA, 13, GPIO_MODE_OUT, GPIO_PULL_NONE, 0);
     //gpio_high(GPIOA, 13);
+    
 
-    //// enable UART1 at 9600 baud (TX=B6, RX=B7)
+
+    // enable UART1 at 9600 baud (TX=B6, RX=B7)
+    UART0->CTL &= ~1;
+    //UART0->IBRD = 104;    // IBRD = int(16,000,000 / (16 * 9600)) = int(104.166666)
+    //UART0->FBRD = 11;     // FBRD = round(0.166666 * 64) = 11
+
+    UART0->IBRD = 43;                    // IBRD = int(80,000,000 / (16 * 115200)) = int(43.402778)
+    UART0->FBRD = 26;                    // FBRD = round(0.402778 * 64) = 26  
+
+    UART0->LCRH = (0x3 << 5) + (1 << 4);  // Set to 8 bits (WLEN) and enable FIFO (FEN)
+
+    UART0->CTL |= 1; 
+
+    GPIOA->AFSEL |= 0x03;
+    GPIOA->DEN |= 0x03;
+    GPIOA->PCTL = (GPIOA->PCTL & ~0xFF) + 0x11;
+    GPIOA->AMSEL &= ~0x3; 
+
     //gpio_init(GPIOB, 6, GPIO_MODE_ALT, GPIO_PULL_NONE, 7);
     //gpio_init(GPIOB, 7, GPIO_MODE_ALT, GPIO_PULL_NONE, 7);
     //RCC->APB2ENR |= 0x00000010; // USART1EN
     //USART1->BRR = (104 << 4) | 3; // 16MHz/(16*104.1875) = 9598 baud
     //USART1->CR1 = 0x0000200c; // USART enable, tx enable, rx enable
+
+    clock_init();
+
+    // turn on an LED! (on pyboard it's the red one)
+    GPIOF->DIR = 0x0E;
+    GPIOF->DEN = 0x0E;
+    GPIOF->DATA = 0x02;
+}
+
+
+#define SYSCTL_RCC_R            (*((volatile unsigned long *)0x400FE060))
+#define SYSCTL_RCC_XTAL_16MHZ   0x00000540  // 16 MHz
+#define SYSCTL_RCC_BYPASS       0x00000800  // PLL Bypass
+#define SYSCTL_RCC_USESYSDIV    0x00400000  // Enable System Clock Divider
+#define SYSCTL_RCC_OSCSRC_INT   0x00000010  // IOSC
+#define SYSCTL_RCC2_R           (*((volatile unsigned long *)0x400FE070))
+#define SYSCTL_RCC2_USERCC2     0x80000000  // Use RCC2
+#define SYSCTL_RCC2_DIV400      0x40000000  // Divide PLL as 400 MHz vs. 200
+#define SYSCTL_RCC2_OSCSRC2_MO  0x00000000  // MOSC
+#define SYSCTL_RIS_R            (*((volatile unsigned long *)0x400FE050))
+#define SYSCTL_RIS_PLLLRIS      0x00000040  // PLL Lock Raw Interrupt Status
+#define SYSCTL_RCC2_BYPASS2     0x00000800  // PLL Bypass 2
+
+
+#define SYSCTL_SYSDIV_2_5  (0x04 << 22)
+void clock_init(void)
+{
+  // Configure PLL and enable Main OSC but keep running on PIOSC
+  SYSCTL_RCC_R = SYSCTL_RCC_XTAL_16MHZ | SYSCTL_RCC_BYPASS | SYSCTL_RCC_USESYSDIV | SYSCTL_RCC_OSCSRC_INT;  
+  // Use Register RCC2, Enable Div400, config SysDiv2 = 2 and SysDiv2LSB = 0, Switch to main Osc and disable Bypass
+  //SYSCTL_RCC2_R = SYSCTL_RCC2_USERCC2 | SYSCTL_RCC2_DIV400 | SYSCTL_SYSDIV_2_5 | SYSCTL_RCC2_OSCSRC2_MO;
+  SYSCTL_RCC2_R = SYSCTL_RCC2_USERCC2 | SYSCTL_RCC2_DIV400 | SYSCTL_SYSDIV_2_5 | SYSCTL_RCC2_OSCSRC2_MO | SYSCTL_RCC2_BYPASS2;
+    
+  //asm volatile ("nop");
+  //asm volatile ("nop");
+  //asm volatile ("nop");
+  //asm volatile ("nop");
+  //asm volatile ("nop");
+  //asm volatile ("nop");
+
+  while ( !(SYSCTL_RIS_R & SYSCTL_RIS_PLLLRIS) );
+  SYSCTL_RCC2_R &= ~SYSCTL_RCC2_BYPASS2;
 }
 
 #endif

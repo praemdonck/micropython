@@ -47,13 +47,18 @@ SRC_C = \
 	main.c \
 	uart_core.c \
 	uart_extra.c \
+	gccollect.c \
 	lib/utils/printf.c \
 	lib/utils/pyexec.c \
 	lib/libc/string0.c \
 	lib/mp-readline/readline.c \
 	$(BUILD)/_frozen_mpy.c \
 
-OBJ = $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
+SRC_S = \
+	gchelper.s \
+
+OBJ = $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o) $(SRC_S:.s=.o))
+#OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 
 ifeq ($(CROSS), 1)
 all: $(BUILD)/firmware.dfu $(BUILD)/micropython.out
