@@ -14,7 +14,7 @@
 #define MICROPY_COMP_DOUBLE_TUPLE_ASSIGN (0)
 #define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (0)
 #define MICROPY_MEM_STATS           (0)
-#define MICROPY_DEBUG_PRINTERS      (0)
+#define MICROPY_DEBUG_PRINTERS      (1)
 #define MICROPY_ENABLE_GC           (1)
 #define MICROPY_REPL_EVENT_DRIVEN   (0)
 #define MICROPY_HELPER_REPL         (1)
@@ -35,7 +35,7 @@
 #define MICROPY_PY_BUILTINS_PROPERTY (0)
 #define MICROPY_PY_BUILTINS_MIN_MAX (0)
 #define MICROPY_PY___FILE__         (0)
-#define MICROPY_PY_GC               (0)
+#define MICROPY_PY_GC               (1)
 #define MICROPY_PY_ARRAY            (0)
 #define MICROPY_PY_ATTRTUPLE        (0)
 #define MICROPY_PY_COLLECTIONS      (0)
@@ -48,6 +48,21 @@
 #define MICROPY_CPYTHON_COMPAT      (0)
 #define MICROPY_LONGINT_IMPL        (MICROPY_LONGINT_IMPL_NONE)
 #define MICROPY_FLOAT_IMPL          (MICROPY_FLOAT_IMPL_NONE)
+//#define MICROPY_FLOAT_IMPL          (MICROPY_FLOAT_IMPL_FLOAT)
+
+
+
+
+
+extern const struct _mp_obj_module_t wipy_module;
+extern const struct _mp_obj_module_t machine_module;
+#define MICROPY_PORT_BUILTIN_MODULES \
+	{ MP_OBJ_NEW_QSTR(MP_QSTR_wipy),        (mp_obj_t)&wipy_module },         \
+	{ MP_OBJ_NEW_QSTR(MP_QSTR_machine),     (mp_obj_t)&machine_module },         \
+
+
+
+
 
 // type definitions for the specific machine
 
