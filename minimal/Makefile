@@ -16,8 +16,11 @@ endif
 INC += -I.
 INC += -I..
 INC += -I../lib/mp-readline
-INC += -I../stmhal
+#INC += -I../stmhal
 INC += -Iutil
+INC += -Iboards
+INC += -Ihal
+INC += -Imods
 INC += -I$(BUILD)
 
 ifeq ($(CROSS), 1)
@@ -53,6 +56,7 @@ SRC_C = \
 	lib/utils/pyexec.c \
 	lib/libc/string0.c \
 	lib/mp-readline/readline.c \
+	boards/pins.c \
 	$(BUILD)/_frozen_mpy.c \
 
 SRC_S = \

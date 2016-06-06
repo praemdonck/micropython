@@ -9,7 +9,9 @@ import csv
 
 
 SUPPORTED_AFS = { 'UART': ('TX', 'RX', 'RTS', 'CTS'),
+                  'U': ('TX', 'RX', 'RTS', 'CTS'),
                   'SPI': ('CLK', 'MOSI', 'MISO', 'CS0'),
+                  'SSI': ('CLK', 'TX', 'RX', 'FSS'),
                   #'I2S': ('CLK', 'FS', 'DAT0', 'DAT1'),
                   'I2C': ('SDA', 'SCL'),
                   'TIM': ('PWM'),
@@ -21,11 +23,13 @@ def parse_port_pin(name_str):
     """Parses a string and returns a (port, gpio_bit) tuple."""
     if len(name_str) < 3:
         raise ValueError("Expecting pin name to be at least 3 characters")
-    if name_str[:2] != 'GP':
-        raise ValueError("Expecting pin name to start with GP")
+    if name_str[0] != 'P':
+        raise ValueError("Expecting pin name to start with P")
+    if name_str[1] not in ['A', 'B', 'C', 'D', 'E', 'F']:
+        raise ValueError("Expecting pin name to be PA, PB, PC, PD, PE or PF")
     if not name_str[2:].isdigit():
         raise ValueError("Expecting numeric GPIO number")
-    port = int(int(name_str[2:]) / 8)
+    port = 1  # int(int(name_str[2:]) / 8)
     gpio_bit = 1 << int(int(name_str[2:]) % 8)
     return (port, gpio_bit)
 
@@ -100,6 +104,9 @@ class Pins:
             for row in rows:
                 try:
                     (port_num, gpio_bit) = parse_port_pin(row[pinname_col])
+                except ValueError as err:
+                    #print(err)
+                    continue
                 except:
                     continue
                 if not row[pin_col].isdigit():
