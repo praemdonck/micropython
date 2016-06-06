@@ -40,7 +40,8 @@
 #include "inc/hw_memmap.h"
 #include "rom_map.h"
 #include "pin.h"
-#include "prcm.h"
+//#include "prcm.h"
+#include "sysctl.h"
 #include "gpio.h"
 #include "interrupt.h"
 #include "pybpin.h"
@@ -273,17 +274,29 @@ STATIC void pin_obj_configure (const pin_obj_t *self) {
         if (self->mode != GPIO_DIR_MODE_ALT && self->mode != GPIO_DIR_MODE_ALT_OD) {
             // enable the peripheral clock for the GPIO port of this pin
             switch (self->port) {
-            case PORT_A0:
-                MAP_PRCMPeripheralClkEnable(PRCM_GPIOA0, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+            case PORT_A:
+                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA0, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
                 break;
-            case PORT_A1:
-                MAP_PRCMPeripheralClkEnable(PRCM_GPIOA1, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+            case PORT_B:
+                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA1, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
                 break;
-            case PORT_A2:
-                MAP_PRCMPeripheralClkEnable(PRCM_GPIOA2, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+            case PORT_C:
+                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA2, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
                 break;
-            case PORT_A3:
-                MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+            case PORT_D:
+                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+                break;
+            case PORT_E:
+                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+                break;
+            case PORT_F:
+                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
                 break;
             default:
                 break;

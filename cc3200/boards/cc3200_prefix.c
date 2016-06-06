@@ -34,9 +34,9 @@
 #include "py/obj.h"
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
-#include "pin.h"
-#include "gpio.h"
 #include "pybpin.h"
+//#include "pins.h"
+#include "gpio.h"
 
 
 #define AF(af_name, af_idx, af_fn, af_unit, af_type) \
@@ -53,13 +53,13 @@
 { \
     { &pin_type }, \
     .name           = MP_QSTR_ ## p_pin_name, \
-    .port           = PORT_A ## p_port, \
+    .port           = PORT_ ## p_port, \
     .af_list        = (p_af_list), \
-    .pull           = PIN_TYPE_STD, \
+    .pull           = GPIO_PIN_TYPE_STD, \
     .bit            = (p_bit), \
     .pin_num        = (p_pin_num), \
-    .af             = PIN_MODE_0, \
-    .strength       = PIN_STRENGTH_4MA, \
+    .af             = 0, \
+    .strength       = GPIO_STRENGTH_4MA, \
     .mode           = GPIO_DIR_MODE_IN, \
     .num_afs        = (p_num_afs), \
     .value          = 0, \

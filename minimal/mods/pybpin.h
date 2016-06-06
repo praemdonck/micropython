@@ -29,15 +29,17 @@
 #define PYBPIN_H_
 
 enum {
-    PORT_A0 = GPIOA0_BASE,
-    PORT_A1 = GPIOA1_BASE,
-    PORT_A2 = GPIOA2_BASE,
-    PORT_A3 = GPIOA3_BASE,
+    PORT_A = GPIO_PORTA_BASE,
+    PORT_B = GPIO_PORTB_BASE,
+    PORT_C = GPIO_PORTC_BASE,
+    PORT_D = GPIO_PORTD_BASE,
+    PORT_E = GPIO_PORTE_BASE,
+    PORT_F = GPIO_PORTF_BASE,
 };
 
 enum {
     PIN_FN_UART = 0,
-    PIN_FN_SPI,
+    PIN_FN_SSI,
     PIN_FN_I2S,
     PIN_FN_I2C,
     PIN_FN_TIM,
@@ -53,10 +55,10 @@ enum {
 };
 
 enum {
-    PIN_TYPE_SPI_CLK = 0,
-    PIN_TYPE_SPI_MOSI,
-    PIN_TYPE_SPI_MISO,
-    PIN_TYPE_SPI_CS0,
+    PIN_TYPE_SSI_CLK = 0,
+    PIN_TYPE_SSI_TX,
+    PIN_TYPE_SSI_RX,
+    PIN_TYPE_SSI_FSS,
 };
 
 enum {

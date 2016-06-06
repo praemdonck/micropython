@@ -29,7 +29,7 @@ def parse_port_pin(name_str):
         raise ValueError("Expecting pin name to be PA, PB, PC, PD, PE or PF")
     if not name_str[2:].isdigit():
         raise ValueError("Expecting numeric GPIO number")
-    port = 1  # int(int(name_str[2:]) / 8)
+    port = name_str[1]   # int(int(name_str[2:]) / 8)
     gpio_bit = 1 << int(int(name_str[2:]) % 8)
     return (port, gpio_bit)
 
@@ -69,10 +69,10 @@ class Pin:
             for af in self.afs:
                 af.print()
             print('};')
-            print('pin_obj_t pin_{:4s} = PIN({:6s}, {:1d}, {:3d}, {:2d}, pin_{}_af, {});\n'.format(
+            print('pin_obj_t pin_{:4s} = PIN({:6s}, {:1s}, {:3d}, {:2d}, pin_{}_af, {});\n'.format(
                    self.name, self.name, self.port, self.gpio_bit, self.pin_num, self.name, len(self.afs)))
         else:
-            print('pin_obj_t pin_{:4s} = PIN({:6s}, {:1d}, {:3d}, {:2d}, NULL, 0);\n'.format(
+            print('pin_obj_t pin_{:4s} = PIN({:6s}, {:1s}, {:3d}, {:2d}, NULL, 0);\n'.format(
                    self.name, self.name, self.port, self.gpio_bit, self.pin_num))
 
     def print_header(self, hdr_file):

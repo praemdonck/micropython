@@ -6,6 +6,9 @@ DEBUG = 1
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h
 
+# qstr definitions (must come before including py.mk)
+QSTR_DEFS = $(BUILD)/pins_qstr.h
+
 # include py core make definitions
 include ../py/py.mk
 
@@ -18,10 +21,10 @@ INC += -I..
 INC += -I../lib/mp-readline
 #INC += -I../stmhal
 INC += -Iutil
-INC += -Iboards
 INC += -Ihal
 INC += -Imods
 INC += -I$(BUILD)
+INC += -I$(HEADER_BUILD)
 
 ifeq ($(CROSS), 1)
 DFU = ../tools/dfu.py
@@ -56,7 +59,7 @@ SRC_C = \
 	lib/utils/pyexec.c \
 	lib/libc/string0.c \
 	lib/mp-readline/readline.c \
-	boards/pins.c \
+	$(BUILD)/pins.c \
 	$(BUILD)/_frozen_mpy.c \
 
 SRC_S = \
@@ -115,5 +118,6 @@ run:
 
 test: $(BUILD)/firmware.elf
 	$(Q)/bin/echo -e "print('hello world!', list(x+1 for x in range(10)), end='eol\\\\n')\\r\\n\\x04" | $(BUILD)/firmware.elf | tail -n2 | grep "^hello world! \\[1, 2, 3, 4, 5, 6, 7, 8, 9, 10\\]eol"
+
 
 include ../py/mkrules.mk

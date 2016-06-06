@@ -1,0 +1,16 @@
+
+	$(Q)$(PYTHON) $(MAKE_PINS) --board $(BOARD_PINS) --af $(AF_FILE) --prefix $(PREFIX_FILE) --hdr $(GEN_PINS_HDR) --qstr $(GEN_PINS_QSTR) > $(GEN_PINS_SRC)
+
+ppython make-pins.py --board LAUNCHXL/pins.csv --af cc3200_af.csv --prefix cc3200_prefix.c --hdr pins.h --qstr pins_qstr.h
+python make-pins.py --board LAUNCHPAD_TM4C123G/pins.csv --af TM4C123GH6P_af.csv --prefix cc3200_prefix.c --hdr tm4_pins.h --qstr tm4_pins_qstr.h
+
+To be executed from minimal folder
+python ../cc3200/boards/make-pins.py --board ../cc3200/boards/LAUNCHPAD_TM4C123G/pins.csv --af ../cc3200/boards/TM4C123GH6P_af.csv --prefix ../cc3200/boards/cc3200_prefix.c --hdr build/genhdr/pins.h --qstr build/pins_qstr.h > build/pins.cython make-pins.py --board LAUNCHXL/pins.csv --af cc3200_af.csv --prefix cc3200_prefix.c --hdr pins.h --qstr pins_qstr.h
+
+MAKE_PINS = boards/make-pins.py
+BOARD_PINS = boards/$(BOARD)/pins.csv
+AF_FILE = boards/cc3200_af.csv
+PREFIX_FILE = boards/cc3200_prefix.c
+GEN_PINS_SRC = $(BUILD)/pins.c
+GEN_PINS_HDR = $(HEADER_BUILD)/pins.h
+GEN_PINS_QSTR = $(BUILD)/pins_qstr.h
