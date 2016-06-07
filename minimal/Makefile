@@ -69,6 +69,7 @@ SRC_S = \
 APP_MODS_SRC_C = $(addprefix mods/,\
 	modwipy.c \
 	modmachine.c \
+	pybpin.c \
 	)
 
 
