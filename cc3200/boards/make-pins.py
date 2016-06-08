@@ -16,7 +16,9 @@ SUPPORTED_AFS = { 'UART': ('TX', 'RX', 'RTS', 'CTS'),
                   'I2C': ('SDA', 'SCL'),
                   'TIM': ('PWM'),
                   'SD': ('CLK', 'CMD', 'DAT0'),
-                  'ADC': ('CH0', 'CH1', 'CH2', 'CH3')
+                  'ADC': ('CH0', 'CH1', 'CH2', 'CH3'),
+#'AIN': ('CH0', 'CH1', 'CH2', 'CH3', 'CH4', 'CH5', 'CH6', 'CH7', 'CH8', 'CH9', 'CH10', 'CH11')
+                  'AIN': ('INPUT')
                 }
 
 def parse_port_pin(name_str):

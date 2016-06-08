@@ -45,7 +45,6 @@ int main(int argc, char **argv) {
     //int stack_dummy;
     //stack_top = (char*)&stack_dummy;
 
-
     uint32_t sp = gc_helper_get_sp();
     gc_collect_init (sp);
 
@@ -157,6 +156,7 @@ uint32_t isr_vector[] __attribute__((section(".isr_vector"))) = {
 void _start(void) {
     // when we get here: stack is initialised, bss is clear, data is copied
 
+soft_reset:
     // SCB->CCR: enable 8-byte stack alignment for IRQ handlers, in accord with EABI
     *((volatile uint32_t*)0xe000ed14) |= 1 << 9;
 
@@ -168,6 +168,8 @@ void _start(void) {
 
     // now that we have a basic system up and running we can call main
     main(0, NULL);
+
+    goto soft_reset;
 
     // we must not return
     for (;;) {

@@ -23,6 +23,7 @@ INC += -I../lib/mp-readline
 INC += -Iutil
 INC += -Ihal
 INC += -Imods
+INC += -Imisc
 INC += -I$(BUILD)
 INC += -I$(HEADER_BUILD)
 
@@ -30,7 +31,7 @@ ifeq ($(CROSS), 1)
 DFU = ../tools/dfu.py
 PYDFU = ../tools/pydfu.py
 CFLAGS_CORTEX_M4 = -mthumb -mtune=cortex-m4 -mabi=aapcs-linux -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -fsingle-precision-constant -Wdouble-promotion
-CFLAGS = $(INC) -Wall -Werror -ansi -std=gnu99 -nostdlib $(CFLAGS_CORTEX_M4) $(COPT)
+CFLAGS = $(INC) -Wall -ansi -std=gnu99 -nostdlib $(CFLAGS_CORTEX_M4) $(COPT)  #-Werror 
 else
 CFLAGS = -m32 $(INC) -Wall -Werror -ansi -std=gnu99 $(COPT)
 endif
@@ -72,11 +73,22 @@ APP_MODS_SRC_C = $(addprefix mods/,\
 	pybpin.c \
 	)
 
+#	antenna.c \
+#	FreeRTOSHooks.c \
+#	help.c \
+#	mpirq.c \
+#	mperror.c \
+#	mpsystick.c \
+
+APP_MISC_SRC_C = $(addprefix misc/,\
+	mpexception.c \
+	)
+
 
 # List of sources for qstr extraction
-SRC_QSTR += $(APP_MODS_SRC_C) #$(APP_MISC_SRC_C) $(APP_STM_SRC_C)
+SRC_QSTR += $(APP_MODS_SRC_C) $(APP_MISC_SRC_C) #$(APP_STM_SRC_C)
 
-OBJ = $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o) $(SRC_S:.s=.o) $(APP_MODS_SRC_C:.c=.o))
+OBJ = $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o) $(SRC_S:.s=.o) $(APP_MODS_SRC_C:.c=.o) $(APP_MISC_SRC_C:.c=.o))
 #OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 
 ifeq ($(CROSS), 1)

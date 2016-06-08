@@ -55,7 +55,7 @@
     .name           = MP_QSTR_ ## p_pin_name, \
     .port           = PORT_ ## p_port, \
     .af_list        = (p_af_list), \
-    .pull           = GPIO_PIN_TYPE_STD, \
+    .type           = GPIO_PIN_TYPE_STD, \
     .bit            = (p_bit), \
     .pin_num        = (p_pin_num), \
     .af             = 0, \

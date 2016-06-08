@@ -33,14 +33,17 @@
 #include "py/mphal.h"
 //#include "irq.h"
 //#include "inc/hw_types.h"
-//#include "inc/hw_gpio.h"
+#include "inc/hw_gpio.h"
 //#include "inc/hw_ints.h"
-//#include "inc/hw_memmap.h"
+#include "inc/hw_memmap.h"
 //#include "inc/hw_uart.h"
-//#include "rom_map.h"
+
+#define TARGET_IS_TM4C123_RB2                                   
+#include "rom.h"
+#include "rom_map.h"
 //#include "prcm.h"
 //#include "pybuart.h"
-//#include "pybpin.h"
+#include "pybpin.h"
 //#include "pybrtc.h"
 //#include "simplelink.h"
 //#include "modnetwork.h"
@@ -76,14 +79,12 @@
 /******************************************************************************/
 // Micro Python bindings;
 
-//STATIC mp_obj_t machine_reset(void) {
-//    // disable wlan
-//    wlan_stop(SL_STOP_TIMEOUT_LONG);
-//    // reset the cpu and it's peripherals
-//    MAP_PRCMMCUReset(true);
-//    return mp_const_none;
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_obj, machine_reset);
+STATIC mp_obj_t machine_reset(void) {
+    // reset the cpu and it's peripherals
+    MAP_SysCtlReset();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_obj, machine_reset);
 
 #ifdef DEBUG
 STATIC mp_obj_t machine_info(uint n_args, const mp_obj_t *args) {
@@ -168,7 +169,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_info_obj, 0, 1, machine_info)
 STATIC const mp_map_elem_t machine_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__),            MP_OBJ_NEW_QSTR(MP_QSTR_umachine) },
 
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_reset),               (mp_obj_t)&machine_reset_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_reset),               (mp_obj_t)&machine_reset_obj },
 #ifdef DEBUG
     { MP_OBJ_NEW_QSTR(MP_QSTR_info),                (mp_obj_t)&machine_info_obj },
 #endif
@@ -186,7 +187,7 @@ STATIC const mp_map_elem_t machine_module_globals_table[] = {
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_enable_irq),          (mp_obj_t)&pyb_enable_irq_obj },
 //
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_RTC),                 (mp_obj_t)&pyb_rtc_type },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_Pin),                 (mp_obj_t)&pin_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Pin),                 (mp_obj_t)&pin_type },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_ADC),                 (mp_obj_t)&pyb_adc_type },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_I2C),                 (mp_obj_t)&pyb_i2c_type },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_SPI),                 (mp_obj_t)&pyb_spi_type },

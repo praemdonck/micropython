@@ -108,5 +108,6 @@ extern const struct _mp_obj_fun_builtin_t mp_builtin_open_obj;
 
 #define MP_STATE_PORT MP_STATE_VM
 
-#define MICROPY_PORT_ROOT_POINTERS \
+#define MICROPY_PORT_ROOT_POINTERS     \
+    mp_obj_t mp_const_user_interrupt;  \
     const char *readline_hist[8];

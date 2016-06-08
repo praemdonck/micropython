@@ -36,18 +36,21 @@
 #include "py/mpstate.h"
 #include "inc/hw_types.h"
 #include "inc/hw_gpio.h"
-#include "inc/hw_ints.h"
+//#include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
+#define TARGET_IS_TM4C123_RB2                                   
+#include "rom.h"
 #include "rom_map.h"
-#include "pin.h"
+
+//#include "pin.h"
 //#include "prcm.h"
 #include "sysctl.h"
 #include "gpio.h"
-#include "interrupt.h"
+//#include "interrupt.h"
 #include "pybpin.h"
-#include "mpirq.h"
+//#include "mpirq.h"
 #include "pins.h"
-#include "pybsleep.h"
+//#include "pybsleep.h"
 #include "mpexception.h"
 #include "mperror.h"
 
@@ -69,7 +72,7 @@ STATIC void pin_irq_enable (mp_obj_t self_in);
 STATIC void pin_irq_disable (mp_obj_t self_in);
 STATIC void pin_extint_register(pin_obj_t *self, uint32_t intmode, uint32_t priority);
 STATIC void pin_validate_mode (uint mode);
-STATIC void pin_validate_pull (uint pull);
+STATIC void pin_validate_type (uint type);
 STATIC void pin_validate_drive (uint strength);
 STATIC void pin_validate_af(const pin_obj_t* pin, int8_t idx, uint8_t *fn, uint8_t *unit, uint8_t *type);
 STATIC uint8_t pin_get_value(const pin_obj_t* self);
@@ -150,8 +153,8 @@ pin_obj_t *pin_find(mp_obj_t user_obj) {
     nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
 }
 
-void pin_config (pin_obj_t *self, int af, uint mode, uint pull, int value, uint strength) {
-    self->mode = mode, self->pull = pull, self->strength = strength;
+void pin_config (pin_obj_t *self, int af, uint mode, uint type, int value, uint strength) {
+    self->mode = mode, self->type = type, self->strength = strength;
     // if af is -1, then we want to keep it as it is
     if (af != -1) {
         self->af = af;
@@ -164,21 +167,21 @@ void pin_config (pin_obj_t *self, int af, uint mode, uint pull, int value, uint 
 
     // mark the pin as used
     self->used = true;
-    //pin_obj_configure ((const pin_obj_t *)self);
+    pin_obj_configure ((const pin_obj_t *)self);
 
     // register it with the sleep module
     //pyb_sleep_add ((const mp_obj_t)self, (WakeUpCB_t)pin_obj_configure);
 }
 
-void pin_assign_pins_af (mp_obj_t *pins, uint32_t n_pins, uint32_t pull, uint32_t fn, uint32_t unit) {
-    for (int i = 0; i < n_pins; i++) {
-        pin_free_af_from_pins(fn, unit, i);
-        if (pins[i] != mp_const_none) {
-            pin_obj_t *pin = pin_find(pins[i]);
-            pin_config (pin, pin_find_af_index(pin, fn, unit, i), 0, pull, -1, PIN_STRENGTH_2MA);
-        }
-    }
-}
+//void pin_assign_pins_af (mp_obj_t *pins, uint32_t n_pins, uint32_t type, uint32_t fn, uint32_t unit) {
+//    for (int i = 0; i < n_pins; i++) {
+//        pin_free_af_from_pins(fn, unit, i);
+//        if (pins[i] != mp_const_none) {
+//            pin_obj_t *pin = pin_find(pins[i]);
+//            pin_config (pin, pin_find_af_index(pin, fn, unit, i), 0, type, -1, PIN_STRENGTH_2MA);
+//        }
+//    }
+//}
 
 uint8_t pin_find_peripheral_unit (const mp_obj_t pin, uint8_t fn, uint8_t type) {
     pin_obj_t *pin_o = pin_find(pin);
@@ -261,18 +264,68 @@ STATIC int8_t pin_obj_find_af (const pin_obj_t* pin, uint8_t fn, uint8_t unit, u
 //    pin->used = false;
 //}
 //
-//STATIC void pin_obj_configure (const pin_obj_t *self) {
+STATIC void pin_obj_configure (const pin_obj_t *self) {
+
+
+    switch (self->port) {
+    case PORT_A:
+        //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA0, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+        break;
+    case PORT_B:
+        //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA1, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+        break;
+    case PORT_C:
+        //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA2, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+        break;
+    case PORT_D:
+        //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+        break;
+    case PORT_E:
+        //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+        break;
+    case PORT_F:
+        //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
+        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+        break;
+    default:
+        break;
+    }
+
+    // configure the direction for Input or Output mode
+    // if mode = GPIO_DIR_MODE_HW this function set the AFSEL bit
+    MAP_GPIODirModeSet(self->port, self->bit, self->mode);
+
+
+    // Configure the ouput pad
+    MAP_GPIOPadConfigSet(self->port, self->bit, self->strength, self->type);
+
+
+    // set the pin value if the port is set as output
+    if (self->mode == GPIO_DIR_MODE_OUT) {
+        MAP_GPIOPinWrite(self->port, self->bit, self->value ? self->bit : 0);
+    }
+
+
+
+
+
+
 //    uint32_t type;
-//    if (self->mode == PIN_TYPE_ANALOG) {
-//        type = PIN_TYPE_ANALOG;
+//    if (self->mode == GPIO_PIN_TYPE_ANALOG) {
+//        type = GPIO_PIN_TYPE_ANALOG;
 //    } else {
-//        type = self->pull;
+//        type = self->type;
 //        uint32_t direction = self->mode;
-//        if (direction == PIN_TYPE_OD || direction == GPIO_DIR_MODE_ALT_OD) {
+//        if (direction == GPIO_PIN_TYPE_OD /*|| direction == GPIO_DIR_MODE_ALT_OD*/ ) {
 //            direction = GPIO_DIR_MODE_OUT;
-//            type |= PIN_TYPE_OD;
+//            type |= GPIO_PIN_TYPE_OD;
 //        }
-//        if (self->mode != GPIO_DIR_MODE_ALT && self->mode != GPIO_DIR_MODE_ALT_OD) {
+//        if (self->mode != GPIO_DIR_MODE_HW /*&& self->mode != GPIO_DIR_MODE_ALT_OD*/) {
 //            // enable the peripheral clock for the GPIO port of this pin
 //            switch (self->port) {
 //            case PORT_A:
@@ -312,11 +365,11 @@ STATIC int8_t pin_obj_find_af (const pin_obj_t* pin, uint8_t fn, uint8_t unit, u
 //            }
 //        }
 //        // now set the alternate function
-//        MAP_PinModeSet (self->pin_num, self->af);
+//        //MAP_PinModeSet (self->pin_num, self->af);
 //    }
 //    //MAP_PinConfigSet(self->pin_num, self->strength, type);
 //    MAP_GPIOPadConfigSet(self->port, self->pin_num, self->strength, type);
-//}
+}
 
 //STATIC void pin_get_hibernate_pin_and_idx (const pin_obj_t *self, uint *hib_pin, uint *idx) {
 //    // pin_num is actually : (package_pin - 1)
@@ -438,24 +491,25 @@ STATIC int8_t pin_obj_find_af (const pin_obj_t* pin, uint8_t fn, uint8_t unit, u
 //    MAP_IntPrioritySet(intnum, priority);
 //}
 
-//STATIC void pin_validate_mode (uint mode) {
-//    if (mode != GPIO_DIR_MODE_IN && mode != GPIO_DIR_MODE_OUT && mode != PIN_TYPE_OD &&
-//        mode != GPIO_DIR_MODE_ALT && mode != GPIO_DIR_MODE_ALT_OD) {
-//        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
-//    }
-//}
-//STATIC void pin_validate_pull (uint pull) {
-//    if (pull != PIN_TYPE_STD && pull != PIN_TYPE_STD_PU && pull != PIN_TYPE_STD_PD) {
-//        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
-//    }
-//}
-//
-//STATIC void pin_validate_drive(uint strength) {
-//    if (strength != PIN_STRENGTH_2MA && strength != PIN_STRENGTH_4MA && strength != PIN_STRENGTH_6MA) {
-//        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
-//    }
-//}
-//
+STATIC void pin_validate_mode (uint mode) {
+    if (mode != GPIO_DIR_MODE_IN && mode != GPIO_DIR_MODE_OUT && 
+        mode != GPIO_DIR_MODE_HW /*&& mode != GPIO_DIR_MODE_ALT_OD */) {
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
+    }
+}
+STATIC void pin_validate_type (uint type) {
+    if (type != GPIO_PIN_TYPE_STD && type != GPIO_PIN_TYPE_STD_WPU && 
+        type != GPIO_PIN_TYPE_STD_WPD && type != GPIO_PIN_TYPE_ANALOG && type != GPIO_PIN_TYPE_OD) {
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
+    }
+}
+
+STATIC void pin_validate_drive(uint strength) {
+    if (strength != GPIO_STRENGTH_2MA && strength != GPIO_STRENGTH_4MA && strength != GPIO_STRENGTH_8MA) {
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
+    }
+}
+
 //STATIC void pin_validate_af(const pin_obj_t* pin, int8_t idx, uint8_t *fn, uint8_t *unit, uint8_t *type) {
 //    for (int i = 0; i < pin->num_afs; i++) {
 //        if (pin->af_list[i].idx == idx) {
@@ -468,28 +522,28 @@ STATIC int8_t pin_obj_find_af (const pin_obj_t* pin, uint8_t fn, uint8_t unit, u
 //    nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
 //}
 //
-//STATIC uint8_t pin_get_value (const pin_obj_t* self) {
-//    uint32_t value;
-//    bool setdir = false;
-//    if (self->mode == PIN_TYPE_OD || self->mode == GPIO_DIR_MODE_ALT_OD) {
-//        setdir = true;
-//        // configure the direction to IN for a moment in order to read the pin value
-//        MAP_GPIODirModeSet(self->port, self->bit, GPIO_DIR_MODE_IN);
-//    }
-//    // now get the value
-//    value = MAP_GPIOPinRead(self->port, self->bit);
-//    if (setdir) {
-//        // set the direction back to output
-//        MAP_GPIODirModeSet(self->port, self->bit, GPIO_DIR_MODE_OUT);
-//        if (self->value) {
-//            MAP_GPIOPinWrite(self->port, self->bit, self->bit);
-//        } else {
-//            MAP_GPIOPinWrite(self->port, self->bit, 0);
-//        }
-//    }
-//    // return it
-//    return value ? 1 : 0;
-//}
+STATIC uint8_t pin_get_value (const pin_obj_t* self) {
+    uint32_t value;
+    //bool setdir = false;
+    //if (self->mode == PIN_TYPE_OD || self->mode == GPIO_DIR_MODE_ALT_OD) {
+    //    setdir = true;
+    //    // configure the direction to IN for a moment in order to read the pin value
+    //    MAP_GPIODirModeSet(self->port, self->bit, GPIO_DIR_MODE_IN);
+    //}
+    // now get the value
+    value = MAP_GPIOPinRead(self->port, self->bit);
+    //if (setdir) {
+    //    // set the direction back to output
+    //    MAP_GPIODirModeSet(self->port, self->bit, GPIO_DIR_MODE_OUT);
+    //    if (self->value) {
+    //        MAP_GPIOPinWrite(self->port, self->bit, self->bit);
+    //    } else {
+    //        MAP_GPIOPinWrite(self->port, self->bit, 0);
+    //    }
+    //}
+    // return it
+    return value ? 1 : 0;
+}
 
 //STATIC void GPIOA0IntHandler (void) {
 //    EXTI_Handler(GPIOA0_BASE);
@@ -538,9 +592,9 @@ STATIC int8_t pin_obj_find_af (const pin_obj_t* pin, uint8_t fn, uint8_t unit, u
 
 STATIC const mp_arg_t pin_init_args[] = {
     { MP_QSTR_mode,                        MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_pull,                        MP_ARG_OBJ, {.u_obj = mp_const_none} },
+    { MP_QSTR_type,                        MP_ARG_OBJ, {.u_obj = mp_const_none} },
     { MP_QSTR_value,    MP_ARG_KW_ONLY  |  MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    { MP_QSTR_drive,    MP_ARG_KW_ONLY  |  MP_ARG_INT, {.u_int = PIN_STRENGTH_4MA} },
+    { MP_QSTR_drive,    MP_ARG_KW_ONLY  |  MP_ARG_INT, {.u_int = GPIO_STRENGTH_2MA} },
     { MP_QSTR_alt,      MP_ARG_KW_ONLY  |  MP_ARG_INT, {.u_int = -1} },
 };
 #define pin_INIT_NUM_ARGS MP_ARRAY_SIZE(pin_init_args)
@@ -551,49 +605,49 @@ STATIC mp_obj_t pin_obj_init_helper(pin_obj_t *self, mp_uint_t n_args, const mp_
     mp_arg_parse_all(n_args, pos_args, kw_args, pin_INIT_NUM_ARGS, pin_init_args, args);
 
     // get the io mode
-//    uint mode;
-//    //  default is input
-//    if (args[0].u_obj == MP_OBJ_NULL) {
-//        mode = GPIO_DIR_MODE_IN;
-//    } else {
-//        mode = mp_obj_get_int(args[0].u_obj);
-//        pin_validate_mode (mode);
-//    }
-//
-//    // get the pull type
-//    uint pull;
-//    if (args[1].u_obj == mp_const_none) {
-//        pull = PIN_TYPE_STD;
-//    } else {
-//        pull = mp_obj_get_int(args[1].u_obj);
-//        pin_validate_pull (pull);
-//    }
-//
-//    // get the value
-//    int value = -1;
-//    if (args[2].u_obj != MP_OBJ_NULL) {
-//        if (mp_obj_is_true(args[2].u_obj)) {
-//            value = 1;
-//        } else {
-//            value = 0;
-//        }
-//    }
-//
-//    // get the strenght
-//    uint strength = args[3].u_int;
-//    pin_validate_drive(strength);
-//
-//    // get the alternate function
-//    int af = args[4].u_int;
-//    if (mode != GPIO_DIR_MODE_ALT && mode != GPIO_DIR_MODE_ALT_OD) {
-//        if (af == -1) {
-//            af = 0;
-//        } else {
-//            goto invalid_args;
-//        }
-//    } else if (af < -1 || af > 15) {
-//        goto invalid_args;
-//    }
+    uint mode;
+    //  default is input
+    if (args[0].u_obj == MP_OBJ_NULL) {
+        mode = GPIO_DIR_MODE_IN;
+    } else {
+        mode = mp_obj_get_int(args[0].u_obj);
+        pin_validate_mode (mode);
+    }
+
+    // get the type type
+    uint type;
+    if (args[1].u_obj == mp_const_none) {
+        type = GPIO_PIN_TYPE_STD;
+    } else {
+        type = mp_obj_get_int(args[1].u_obj);
+        pin_validate_type (type);
+    }
+
+    // get the value
+    int value = -1;
+    if (args[2].u_obj != MP_OBJ_NULL) {
+        if (mp_obj_is_true(args[2].u_obj)) {
+            value = 1;
+        } else {
+            value = 0;
+        }
+    }
+
+    // get the strenght
+    uint strength = args[3].u_int;
+    pin_validate_drive(strength);
+
+    // get the alternate function
+    int af = args[4].u_int;
+    if (mode != GPIO_DIR_MODE_HW /*&& mode != GPIO_DIR_MODE_ALT_OD */) {
+        if (af == -1) {
+            af = 0;
+        } else {
+            goto invalid_args;
+        }
+    } else if (af < -1 || af > 15) {
+        goto invalid_args;
+    }
 //
 //    // check for a valid af and then free it from any other pins
 //    if (af > PIN_MODE_0) {
@@ -601,65 +655,77 @@ STATIC mp_obj_t pin_obj_init_helper(pin_obj_t *self, mp_uint_t n_args, const mp_
 //        pin_validate_af (self, af, &fn, &unit, &type);
 //        pin_free_af_from_pins(fn, unit, type);
 //    }
-//    pin_config (self, af, mode, pull, value, strength);
+    pin_config (self, af, mode, type, value, strength);
 //
-//    return mp_const_none;
+    return mp_const_none;
 //
-//invalid_args:
-//    nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
+invalid_args:
+    nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
 }
 
 STATIC void pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     pin_obj_t *self = self_in;
- //   uint32_t pull = self->pull;
- //   uint32_t drive = self->strength;
+    uint32_t type = self->type;
+    uint32_t drive = self->strength;
 
     // pin name
     mp_printf(print, "Pin('%q'", self->name);
 
     // pin mode
-//    qstr mode_qst;
-//    uint32_t mode = self->mode;
-//    if (mode == GPIO_DIR_MODE_IN) {
-//        mode_qst = MP_QSTR_IN;
-//    } else if (mode == GPIO_DIR_MODE_OUT) {
-//        mode_qst = MP_QSTR_OUT;
-//    } else if (mode == GPIO_DIR_MODE_ALT) {
-//        mode_qst = MP_QSTR_ALT;
+    qstr mode_qst;
+    uint32_t mode = self->mode;
+    if (mode == GPIO_DIR_MODE_IN) {
+        mode_qst = MP_QSTR_IN;
+    } else if (mode == GPIO_DIR_MODE_OUT) {
+        mode_qst = MP_QSTR_OUT;
+    } else if (mode == GPIO_DIR_MODE_ALT) {
+        mode_qst = MP_QSTR_ALT;
 //    } else if (mode == GPIO_DIR_MODE_ALT_OD) {
 //        mode_qst = MP_QSTR_ALT_OPEN_DRAIN;
-//    } else {
-//        mode_qst = MP_QSTR_OPEN_DRAIN;
-//    }
-//    mp_printf(print, ", mode=Pin.%q", mode_qst);
-//
-//    // pin pull
-//    qstr pull_qst;
-//    if (pull == PIN_TYPE_STD) {
-//        mp_printf(print, ", pull=%q", MP_QSTR_None);
-//    } else {
-//        if (pull == PIN_TYPE_STD_PU) {
-//            pull_qst = MP_QSTR_PULL_UP;
-//        } else {
-//            pull_qst = MP_QSTR_PULL_DOWN;
-//        }
-//        mp_printf(print, ", pull=Pin.%q", pull_qst);
-//    }
-//
-//    // pin drive
-//    qstr drv_qst;
-//    if (drive == PIN_STRENGTH_2MA) {
-//        drv_qst = MP_QSTR_LOW_POWER;
-//    } else if (drive == PIN_STRENGTH_4MA) {
-//        drv_qst = MP_QSTR_MED_POWER;
-//    } else {
-//        drv_qst = MP_QSTR_HIGH_POWER;
-//    }
-//    mp_printf(print, ", drive=Pin.%q", drv_qst);
-//
-//    // pin af
-//    int alt = (self->af == 0) ? -1 : self->af;
-//    mp_printf(print, ", alt=%d)", alt);
+    } else {
+        mode_qst = MP_QSTR_OPEN_DRAIN;
+    }
+    mp_printf(print, ", mode=Pin.%q", mode_qst);
+
+    // pin type
+    qstr type_qst;
+    switch (type) {
+      case GPIO_PIN_TYPE_STD:
+        type_qst = MP_QSTR_STD;
+        break;
+      case GPIO_PIN_TYPE_STD_WPU:
+          type_qst = MP_QSTR_PULL_UP;
+          break;
+      default:
+          type_qst = MP_QSTR_PULL_DOWN;
+    }
+    mp_printf(print, ", type=Pin.%q", type_qst);
+
+    //if (type == GPIO_PIN_TYPE_STD) {
+    //    mp_printf(print, ", type=%q", MP_QSTR_None);
+    //} else {
+    //    if (type == GPIO_PIN_TYPE_STD_WPU) {
+    //        type_qst = MP_QSTR_PULL_UP;
+    //    } else {
+    //        type_qst = MP_QSTR_PULL_DOWN;
+    //    }
+    //    mp_printf(print, ", type=Pin.%q", type_qst);
+    //}
+
+    // pin drive
+    qstr drv_qst;
+    if (drive == GPIO_STRENGTH_2MA) {
+        drv_qst = MP_QSTR_LOW_POWER;
+    } else if (drive == GPIO_STRENGTH_4MA) {
+        drv_qst = MP_QSTR_MED_POWER;
+    } else {
+        drv_qst = MP_QSTR_HIGH_POWER;
+    }
+    mp_printf(print, ", drive=Pin.%q", drv_qst);
+
+    // pin af
+    int alt = (self->af == 0) ? -1 : self->af;
+    mp_printf(print, ", alt=%d)", alt);
 }
 
 STATIC mp_obj_t pin_make_new(const mp_obj_type_t *type, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
@@ -680,37 +746,37 @@ STATIC mp_obj_t pin_obj_init(mp_uint_t n_args, const mp_obj_t *args, mp_map_t *k
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(pin_init_obj, 1, pin_obj_init);
 
-//STATIC mp_obj_t pin_value(mp_uint_t n_args, const mp_obj_t *args) {
-//    pin_obj_t *self = args[0];
-//    if (n_args == 1) {
-//        // get the value
-//        return MP_OBJ_NEW_SMALL_INT(pin_get_value(self));
-//    } else {
-//        // set the pin value
-//        if (mp_obj_is_true(args[1])) {
-//            self->value = 1;
-//            MAP_GPIOPinWrite(self->port, self->bit, self->bit);
-//        } else {
-//            self->value = 0;
-//            MAP_GPIOPinWrite(self->port, self->bit, 0);
-//        }
-//        return mp_const_none;
-//    }
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_value_obj, 1, 2, pin_value);
-//
-//STATIC mp_obj_t pin_toggle(mp_obj_t self_in) {
-//    pin_obj_t *self = self_in;
-//    MAP_GPIOPinWrite(self->port, self->bit, ~MAP_GPIOPinRead(self->port, self->bit));
-//    return mp_const_none;
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_toggle_obj, pin_toggle);
-//
-//STATIC mp_obj_t pin_id(mp_obj_t self_in) {
-//    pin_obj_t *self = self_in;
-//    return MP_OBJ_NEW_QSTR(self->name);
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_id_obj, pin_id);
+STATIC mp_obj_t pin_value(mp_uint_t n_args, const mp_obj_t *args) {
+    pin_obj_t *self = args[0];
+    if (n_args == 1) {
+        // get the value
+        return MP_OBJ_NEW_SMALL_INT(pin_get_value(self));
+    } else {
+        // set the pin value
+        if (mp_obj_is_true(args[1])) {
+            self->value = 1;
+            MAP_GPIOPinWrite(self->port, self->bit, self->bit);
+        } else {
+            self->value = 0;
+            MAP_GPIOPinWrite(self->port, self->bit, 0);
+        }
+        return mp_const_none;
+    }
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_value_obj, 1, 2, pin_value);
+
+STATIC mp_obj_t pin_toggle(mp_obj_t self_in) {
+    pin_obj_t *self = self_in;
+    MAP_GPIOPinWrite(self->port, self->bit, ~MAP_GPIOPinRead(self->port, self->bit));
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_toggle_obj, pin_toggle);
+
+STATIC mp_obj_t pin_id(mp_obj_t self_in) {
+    pin_obj_t *self = self_in;
+    return MP_OBJ_NEW_QSTR(self->name);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_id_obj, pin_id);
 
 //STATIC mp_obj_t pin_mode(mp_uint_t n_args, const mp_obj_t *args) {
 //    pin_obj_t *self = args[0];
@@ -726,27 +792,27 @@ MP_DEFINE_CONST_FUN_OBJ_KW(pin_init_obj, 1, pin_obj_init);
 //}
 //STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_mode_obj, 1, 2, pin_mode);
 //
-//STATIC mp_obj_t pin_pull(mp_uint_t n_args, const mp_obj_t *args) {
+//STATIC mp_obj_t pin_type(mp_uint_t n_args, const mp_obj_t *args) {
 //    pin_obj_t *self = args[0];
 //    if (n_args == 1) {
-//        if (self->pull == PIN_TYPE_STD) {
+//        if (self->type == PIN_TYPE_STD) {
 //            return mp_const_none;
 //        }
-//        return mp_obj_new_int(self->pull);
+//        return mp_obj_new_int(self->type);
 //    } else {
-//        uint32_t pull;
+//        uint32_t type;
 //        if (args[1] == mp_const_none) {
-//            pull = PIN_TYPE_STD;
+//            type = PIN_TYPE_STD;
 //        } else {
-//            pull = mp_obj_get_int(args[1]);
-//            pin_validate_pull (pull);
+//            type = mp_obj_get_int(args[1]);
+//            pin_validate_type (type);
 //        }
-//        self->pull = pull;
+//        self->type = type;
 //        pin_obj_configure(self);
 //        return mp_const_none;
 //    }
 //}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_pull_obj, 1, 2, pin_pull);
+//STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_type_obj, 1, 2, pin_type);
 //
 //STATIC mp_obj_t pin_drive(mp_uint_t n_args, const mp_obj_t *args) {
 //    pin_obj_t *self = args[0];
@@ -762,11 +828,11 @@ MP_DEFINE_CONST_FUN_OBJ_KW(pin_init_obj, 1, pin_obj_init);
 //}
 //STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_drive_obj, 1, 2, pin_drive);
 //
-//STATIC mp_obj_t pin_call(mp_obj_t self_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
-//    mp_arg_check_num(n_args, n_kw, 0, 1, false);
-//    mp_obj_t _args[2] = {self_in, *args};
-//    return pin_value (n_args + 1, _args);
-//}
+STATIC mp_obj_t pin_call(mp_obj_t self_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
+    mp_arg_check_num(n_args, n_kw, 0, 1, false);
+    mp_obj_t _args[2] = {self_in, *args};
+    return pin_value (n_args + 1, _args);
+}
 //
 //STATIC mp_obj_t pin_alt_list(mp_obj_t self_in) {
 //    pin_obj_t *self = self_in;
@@ -927,11 +993,11 @@ MP_DEFINE_CONST_FUN_OBJ_KW(pin_init_obj, 1, pin_obj_init);
 STATIC const mp_map_elem_t pin_locals_dict_table[] = {
     // instance methods
     { MP_OBJ_NEW_QSTR(MP_QSTR_init),                    (mp_obj_t)&pin_init_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_value),                   (mp_obj_t)&pin_value_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_toggle),                  (mp_obj_t)&pin_toggle_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_id),                      (mp_obj_t)&pin_id_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_value),                   (mp_obj_t)&pin_value_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_toggle),                  (mp_obj_t)&pin_toggle_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_id),                      (mp_obj_t)&pin_id_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_mode),                    (mp_obj_t)&pin_mode_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_pull),                    (mp_obj_t)&pin_pull_obj },
+//    { MP_OBJ_NEW_QSTR(MP_QSTR_type),                    (mp_obj_t)&pin_type_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_drive),                   (mp_obj_t)&pin_drive_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_alt_list),                (mp_obj_t)&pin_alt_list_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_irq),                     (mp_obj_t)&pin_irq_obj },
@@ -940,16 +1006,19 @@ STATIC const mp_map_elem_t pin_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_board),                   (mp_obj_t)&pin_board_pins_obj_type },
 
     // class constants
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_IN),                      MP_OBJ_NEW_SMALL_INT(GPIO_DIR_MODE_IN) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_OUT),                     MP_OBJ_NEW_SMALL_INT(GPIO_DIR_MODE_OUT) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_OPEN_DRAIN),              MP_OBJ_NEW_SMALL_INT(PIN_TYPE_OD) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_ALT),                     MP_OBJ_NEW_SMALL_INT(GPIO_DIR_MODE_ALT) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_ALT_OPEN_DRAIN),          MP_OBJ_NEW_SMALL_INT(GPIO_DIR_MODE_ALT_OD) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_PULL_UP),                 MP_OBJ_NEW_SMALL_INT(PIN_TYPE_STD_PU) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_PULL_DOWN),               MP_OBJ_NEW_SMALL_INT(PIN_TYPE_STD_PD) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_LOW_POWER),               MP_OBJ_NEW_SMALL_INT(PIN_STRENGTH_2MA) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_MED_POWER),               MP_OBJ_NEW_SMALL_INT(PIN_STRENGTH_4MA) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_HIGH_POWER),              MP_OBJ_NEW_SMALL_INT(PIN_STRENGTH_6MA) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IN),                      MP_OBJ_NEW_SMALL_INT(GPIO_DIR_MODE_IN) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_OUT),                     MP_OBJ_NEW_SMALL_INT(GPIO_DIR_MODE_OUT) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ALT),                     MP_OBJ_NEW_SMALL_INT(GPIO_DIR_MODE_HW) },
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_STD),                     MP_OBJ_NEW_SMALL_INT(GPIO_PIN_TYPE_STD) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_PULL_UP),                 MP_OBJ_NEW_SMALL_INT(GPIO_PIN_TYPE_STD_WPU) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_PULL_DOWN),               MP_OBJ_NEW_SMALL_INT(GPIO_PIN_TYPE_STD_WPD) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_OPEN_DRAIN),              MP_OBJ_NEW_SMALL_INT(GPIO_PIN_TYPE_OD) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ANALOG),                  MP_OBJ_NEW_SMALL_INT(GPIO_PIN_TYPE_ANALOG) },
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LOW_POWER),               MP_OBJ_NEW_SMALL_INT(GPIO_STRENGTH_2MA) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_MED_POWER),               MP_OBJ_NEW_SMALL_INT(GPIO_STRENGTH_4MA) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_HIGH_POWER),              MP_OBJ_NEW_SMALL_INT(GPIO_STRENGTH_8MA) },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_FALLING),             MP_OBJ_NEW_SMALL_INT(PYB_PIN_FALLING_EDGE) },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_RISING),              MP_OBJ_NEW_SMALL_INT(PYB_PIN_RISING_EDGE) },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_LOW_LEVEL),           MP_OBJ_NEW_SMALL_INT(PYB_PIN_LOW_LEVEL) },
@@ -967,12 +1036,12 @@ const mp_obj_type_t pin_type = {
     .locals_dict = (mp_obj_t)&pin_locals_dict,
 };
 
-STATIC const mp_irq_methods_t pin_irq_methods = {
-    .init = pin_irq,
-    .enable = pin_irq_enable,
-    .disable = pin_irq_disable,
-    .flags = pin_irq_flags,
-};
+//STATIC const mp_irq_methods_t pin_irq_methods = {
+//    .init = pin_irq,
+//    .enable = pin_irq_enable,
+//    .disable = pin_irq_disable,
+//    .flags = pin_irq_flags,
+//};
 
 STATIC void pin_named_pins_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     pin_named_pins_obj_t *self = self_in;

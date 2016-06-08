@@ -44,7 +44,7 @@ enum {
     PIN_FN_I2C,
     PIN_FN_TIM,
     PIN_FN_SD,
-    PIN_FN_ADC,
+    PIN_FN_AIN,
 };
 
 enum {
@@ -90,6 +90,10 @@ enum {
     PIN_TYPE_ADC_CH3,
 };
 
+enum {
+    PIN_TYPE_AIN_INPUT,
+};
+
 typedef struct {
   qstr name;
   int8_t  idx;
@@ -103,7 +107,7 @@ typedef struct {
     const qstr          name;
     const uint32_t      port;
     const pin_af_t      *af_list;
-    uint16_t            pull;
+    uint16_t            type;
     const uint8_t       bit;
     const uint8_t       pin_num;
     int8_t              af;
