@@ -11,6 +11,9 @@
 #include "py/gc.h"
 #include "lib/utils/pyexec.h"
 
+#include "inc/hw_memmap.h"
+#include "pybpin.h"
+
 #include "gccollect.h"
 #include "gchelper.h"
 
@@ -52,6 +55,10 @@ int main(int argc, char **argv) {
     gc_init(heap, heap + sizeof(heap));
     #endif
     mp_init();
+
+
+
+    pin_init0();
     #if MICROPY_REPL_EVENT_DRIVEN
     pyexec_event_repl_init();
     for (;;) {

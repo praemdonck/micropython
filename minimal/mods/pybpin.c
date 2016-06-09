@@ -120,7 +120,7 @@ DECLARE PRIVATE DATA
 /******************************************************************************
  DEFINE PUBLIC FUNCTIONS
  ******************************************************************************/
-#define DEBUG
+//#define DEBUG
 void pin_init0(void) {
 // this initalization also reconfigures the JTAG/SWD pins
 #ifndef DEBUG
@@ -259,11 +259,11 @@ STATIC int8_t pin_obj_find_af (const pin_obj_t* pin, uint8_t fn, uint8_t unit, u
 //    }
 //}
 //
-//STATIC void pin_deassign (pin_obj_t* pin) {
-//    pin_config (pin, PIN_MODE_0, GPIO_DIR_MODE_IN, PIN_TYPE_STD, -1, PIN_STRENGTH_4MA);
-//    pin->used = false;
-//}
-//
+STATIC void pin_deassign (pin_obj_t* pin) {
+    pin_config (pin, 0, GPIO_DIR_MODE_IN, GPIO_PIN_TYPE_STD, -1, GPIO_STRENGTH_2MA);
+    pin->used = false;
+}
+
 STATIC void pin_obj_configure (const pin_obj_t *self) {
 
 
@@ -778,56 +778,56 @@ STATIC mp_obj_t pin_id(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_id_obj, pin_id);
 
-//STATIC mp_obj_t pin_mode(mp_uint_t n_args, const mp_obj_t *args) {
-//    pin_obj_t *self = args[0];
-//    if (n_args == 1) {
-//        return mp_obj_new_int(self->mode);
-//    } else {
-//        uint32_t mode = mp_obj_get_int(args[1]);
-//        pin_validate_mode (mode);
-//        self->mode = mode;
-//        pin_obj_configure(self);
-//        return mp_const_none;
-//    }
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_mode_obj, 1, 2, pin_mode);
-//
-//STATIC mp_obj_t pin_type(mp_uint_t n_args, const mp_obj_t *args) {
-//    pin_obj_t *self = args[0];
-//    if (n_args == 1) {
-//        if (self->type == PIN_TYPE_STD) {
-//            return mp_const_none;
-//        }
-//        return mp_obj_new_int(self->type);
-//    } else {
-//        uint32_t type;
-//        if (args[1] == mp_const_none) {
-//            type = PIN_TYPE_STD;
-//        } else {
-//            type = mp_obj_get_int(args[1]);
-//            pin_validate_type (type);
-//        }
-//        self->type = type;
-//        pin_obj_configure(self);
-//        return mp_const_none;
-//    }
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_type_obj, 1, 2, pin_type);
-//
-//STATIC mp_obj_t pin_drive(mp_uint_t n_args, const mp_obj_t *args) {
-//    pin_obj_t *self = args[0];
-//    if (n_args == 1) {
-//        return mp_obj_new_int(self->strength);
-//    } else {
-//        uint32_t strength = mp_obj_get_int(args[1]);
-//        pin_validate_drive (strength);
-//        self->strength = strength;
-//        pin_obj_configure(self);
-//        return mp_const_none;
-//    }
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_drive_obj, 1, 2, pin_drive);
-//
+STATIC mp_obj_t pin_mode(mp_uint_t n_args, const mp_obj_t *args) {
+    pin_obj_t *self = args[0];
+    if (n_args == 1) {
+        return mp_obj_new_int(self->mode);
+    } else {
+        uint32_t mode = mp_obj_get_int(args[1]);
+        pin_validate_mode (mode);
+        self->mode = mode;
+        pin_obj_configure(self);
+        return mp_const_none;
+    }
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_mode_obj, 1, 2, pin_mode);
+
+STATIC mp_obj_t pin_type_fun(mp_uint_t n_args, const mp_obj_t *args) {
+    pin_obj_t *self = args[0];
+    if (n_args == 1) {
+        if (self->type == GPIO_PIN_TYPE_STD) {
+            return mp_const_none;
+        }
+        return mp_obj_new_int(self->type);
+    } else {
+        uint32_t type;
+        if (args[1] == mp_const_none) {
+            type = GPIO_PIN_TYPE_STD;
+        } else {
+            type = mp_obj_get_int(args[1]);
+            pin_validate_type (type);
+        }
+        self->type = type;
+        pin_obj_configure(self);
+        return mp_const_none;
+    }
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_type_obj, 1, 2, pin_type_fun);
+
+STATIC mp_obj_t pin_drive(mp_uint_t n_args, const mp_obj_t *args) {
+    pin_obj_t *self = args[0];
+    if (n_args == 1) {
+        return mp_obj_new_int(self->strength);
+    } else {
+        uint32_t strength = mp_obj_get_int(args[1]);
+        pin_validate_drive (strength);
+        self->strength = strength;
+        pin_obj_configure(self);
+        return mp_const_none;
+    }
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pin_drive_obj, 1, 2, pin_drive);
+
 STATIC mp_obj_t pin_call(mp_obj_t self_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
     mp_obj_t _args[2] = {self_in, *args};
@@ -848,7 +848,7 @@ STATIC mp_obj_t pin_call(mp_obj_t self_in, mp_uint_t n_args, mp_uint_t n_kw, con
 //}
 //STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_alt_list_obj, pin_alt_list);
 
-/// \method irq(trigger, priority, handler, wake)
+// \method irq(trigger, priority, handler, wake)
 //STATIC mp_obj_t pin_irq (mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
 //    mp_arg_val_t args[mp_irq_INIT_NUM_ARGS];
 //    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, mp_irq_INIT_NUM_ARGS, mp_irq_init_args, args);
@@ -996,9 +996,9 @@ STATIC const mp_map_elem_t pin_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_value),                   (mp_obj_t)&pin_value_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_toggle),                  (mp_obj_t)&pin_toggle_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_id),                      (mp_obj_t)&pin_id_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_mode),                    (mp_obj_t)&pin_mode_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_type),                    (mp_obj_t)&pin_type_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_drive),                   (mp_obj_t)&pin_drive_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_mode),                    (mp_obj_t)&pin_mode_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_type),                    (mp_obj_t)&pin_type_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_drive),                   (mp_obj_t)&pin_drive_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_alt_list),                (mp_obj_t)&pin_alt_list_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_irq),                     (mp_obj_t)&pin_irq_obj },
 
