@@ -48,7 +48,7 @@
 #include "gpio.h"
 //#include "interrupt.h"
 #include "pybpin.h"
-//#include "mpirq.h"
+#include "mpirq.h"
 #include "pins.h"
 //#include "pybsleep.h"
 #include "mpexception.h"
@@ -833,54 +833,54 @@ STATIC mp_obj_t pin_call(mp_obj_t self_in, mp_uint_t n_args, mp_uint_t n_kw, con
     mp_obj_t _args[2] = {self_in, *args};
     return pin_value (n_args + 1, _args);
 }
-//
-//STATIC mp_obj_t pin_alt_list(mp_obj_t self_in) {
-//    pin_obj_t *self = self_in;
-//    mp_obj_t af[2];
-//    mp_obj_t afs = mp_obj_new_list(0, NULL);
-//
-//    for (int i = 0; i < self->num_afs; i++) {
-//        af[0] = MP_OBJ_NEW_QSTR(self->af_list[i].name);
-//        af[1] = mp_obj_new_int(self->af_list[i].idx);
-//        mp_obj_list_append(afs, mp_obj_new_tuple(MP_ARRAY_SIZE(af), af));
-//    }
-//    return afs;
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_alt_list_obj, pin_alt_list);
+
+STATIC mp_obj_t pin_alt_list(mp_obj_t self_in) {
+    pin_obj_t *self = self_in;
+    mp_obj_t af[2];
+    mp_obj_t afs = mp_obj_new_list(0, NULL);
+
+    for (int i = 0; i < self->num_afs; i++) {
+        af[0] = MP_OBJ_NEW_QSTR(self->af_list[i].name);
+        af[1] = mp_obj_new_int(self->af_list[i].idx);
+        mp_obj_list_append(afs, mp_obj_new_tuple(MP_ARRAY_SIZE(af), af));
+    }
+    return afs;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_alt_list_obj, pin_alt_list);
 
 // \method irq(trigger, priority, handler, wake)
-//STATIC mp_obj_t pin_irq (mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-//    mp_arg_val_t args[mp_irq_INIT_NUM_ARGS];
-//    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, mp_irq_INIT_NUM_ARGS, mp_irq_init_args, args);
-//    pin_obj_t *self = pos_args[0];
-//
-//    // convert the priority to the correct value
-//    uint priority = mp_irq_translate_priority (args[1].u_int);
-//
-//    // verify and translate the interrupt mode
-//    uint mp_trigger = mp_obj_get_int(args[0].u_obj);
-//    uint trigger;
-//    if (mp_trigger == (PYB_PIN_FALLING_EDGE | PYB_PIN_RISING_EDGE)) {
-//        trigger = GPIO_BOTH_EDGES;
-//    } else {
-//        switch (mp_trigger) {
-//        case PYB_PIN_FALLING_EDGE:
-//            trigger = GPIO_FALLING_EDGE;
-//            break;
-//        case PYB_PIN_RISING_EDGE:
-//            trigger = GPIO_RISING_EDGE;
-//            break;
-//        case PYB_PIN_LOW_LEVEL:
-//            trigger = GPIO_LOW_LEVEL;
-//            break;
-//        case PYB_PIN_HIGH_LEVEL:
-//            trigger = GPIO_HIGH_LEVEL;
-//            break;
-//        default:
-//            goto invalid_args;
-//        }
-//    }
-//
+STATIC mp_obj_t pin_irq (mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    mp_arg_val_t args[mp_irq_INIT_NUM_ARGS];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, mp_irq_INIT_NUM_ARGS, mp_irq_init_args, args);
+    pin_obj_t *self = pos_args[0];
+
+    // convert the priority to the correct value
+    uint priority = mp_irq_translate_priority (args[1].u_int);
+
+    // verify and translate the interrupt mode
+    uint mp_trigger = mp_obj_get_int(args[0].u_obj);
+    uint trigger;
+    if (mp_trigger == (PYB_PIN_FALLING_EDGE | PYB_PIN_RISING_EDGE)) {
+        trigger = GPIO_BOTH_EDGES;
+    } else {
+        switch (mp_trigger) {
+        case PYB_PIN_FALLING_EDGE:
+            trigger = GPIO_FALLING_EDGE;
+            break;
+        case PYB_PIN_RISING_EDGE:
+            trigger = GPIO_RISING_EDGE;
+            break;
+        case PYB_PIN_LOW_LEVEL:
+            trigger = GPIO_LOW_LEVEL;
+            break;
+        case PYB_PIN_HIGH_LEVEL:
+            trigger = GPIO_HIGH_LEVEL;
+            break;
+        default:
+            goto invalid_args;
+        }
+    }
+
 //    uint8_t pwrmode = (args[3].u_obj == mp_const_none) ? PYB_PWR_MODE_ACTIVE : mp_obj_get_int(args[3].u_obj);
 //    if (pwrmode > (PYB_PWR_MODE_ACTIVE | PYB_PWR_MODE_LPDS | PYB_PWR_MODE_HIBERNATE)) {
 //        goto invalid_args;
@@ -985,10 +985,10 @@ STATIC mp_obj_t pin_call(mp_obj_t self_in, mp_uint_t n_args, mp_uint_t n_kw, con
 //
 //    return _irq;
 //
-//invalid_args:
-//    nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
-//}
-//STATIC MP_DEFINE_CONST_FUN_OBJ_KW(pin_irq_obj, 1, pin_irq);
+invalid_args:
+    nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(pin_irq_obj, 1, pin_irq);
 
 STATIC const mp_map_elem_t pin_locals_dict_table[] = {
     // instance methods
@@ -999,7 +999,7 @@ STATIC const mp_map_elem_t pin_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_mode),                    (mp_obj_t)&pin_mode_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_type),                    (mp_obj_t)&pin_type_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_drive),                   (mp_obj_t)&pin_drive_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_alt_list),                (mp_obj_t)&pin_alt_list_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_alt_list),                (mp_obj_t)&pin_alt_list_obj },
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_irq),                     (mp_obj_t)&pin_irq_obj },
 
     // class attributes
