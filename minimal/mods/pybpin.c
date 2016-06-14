@@ -36,7 +36,7 @@
 #include "py/mpstate.h"
 #include "inc/hw_types.h"
 #include "inc/hw_gpio.h"
-//#include "inc/hw_ints.h"
+#include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
 #define TARGET_IS_TM4C123_RB2                                   
 #include "rom.h"
@@ -76,10 +76,10 @@ STATIC void pin_validate_type (uint type);
 STATIC void pin_validate_drive (uint strength);
 STATIC void pin_validate_af(const pin_obj_t* pin, int8_t idx, uint8_t *fn, uint8_t *unit, uint8_t *type);
 STATIC uint8_t pin_get_value(const pin_obj_t* self);
-STATIC void GPIOA0IntHandler (void);
-STATIC void GPIOA1IntHandler (void);
-STATIC void GPIOA2IntHandler (void);
-STATIC void GPIOA3IntHandler (void);
+//STATIC void GPIOA0IntHandler (void);
+//STATIC void GPIOA1IntHandler (void);
+//STATIC void GPIOA2IntHandler (void);
+//STATIC void GPIOA3IntHandler (void);
 STATIC void EXTI_Handler(uint port);
 
 /******************************************************************************
@@ -108,7 +108,7 @@ typedef struct {
 /******************************************************************************
 DECLARE PRIVATE DATA
 ******************************************************************************/
-//STATIC const mp_irq_methods_t pin_irq_methods;
+STATIC const mp_irq_methods_t pin_irq_methods;
 //STATIC pybpin_wake_pin_t pybpin_wake_pin[PYBPIN_NUM_WAKE_PINS] =
 //                                    { {.active = false, .lpds = PYBPIN_WAKES_NOT, .hib = PYBPIN_WAKES_NOT},
 //                                      {.active = false, .lpds = PYBPIN_WAKES_NOT, .hib = PYBPIN_WAKES_NOT},
@@ -309,66 +309,6 @@ STATIC void pin_obj_configure (const pin_obj_t *self) {
     if (self->mode == GPIO_DIR_MODE_OUT) {
         MAP_GPIOPinWrite(self->port, self->bit, self->value ? self->bit : 0);
     }
-
-
-
-
-
-
-//    uint32_t type;
-//    if (self->mode == GPIO_PIN_TYPE_ANALOG) {
-//        type = GPIO_PIN_TYPE_ANALOG;
-//    } else {
-//        type = self->type;
-//        uint32_t direction = self->mode;
-//        if (direction == GPIO_PIN_TYPE_OD /*|| direction == GPIO_DIR_MODE_ALT_OD*/ ) {
-//            direction = GPIO_DIR_MODE_OUT;
-//            type |= GPIO_PIN_TYPE_OD;
-//        }
-//        if (self->mode != GPIO_DIR_MODE_HW /*&& self->mode != GPIO_DIR_MODE_ALT_OD*/) {
-//            // enable the peripheral clock for the GPIO port of this pin
-//            switch (self->port) {
-//            case PORT_A:
-//                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA0, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
-//                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-//                break;
-//            case PORT_B:
-//                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA1, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
-//                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-//                break;
-//            case PORT_C:
-//                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA2, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
-//                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-//                break;
-//            case PORT_D:
-//                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
-//                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-//                break;
-//            case PORT_E:
-//                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
-//                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-//                break;
-//            case PORT_F:
-//                //MAP_PRCMPeripheralClkEnable(PRCM_GPIOA3, PRCM_RUN_MODE_CLK | PRCM_SLP_MODE_CLK);
-//                MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-//                break;
-//            default:
-//                break;
-//            }
-//            // configure the direction
-//            MAP_GPIODirModeSet(self->port, self->bit, direction);
-//            // set the pin value
-//            if (self->value) {
-//                MAP_GPIOPinWrite(self->port, self->bit, self->bit);
-//            } else {
-//                MAP_GPIOPinWrite(self->port, self->bit, 0);
-//            }
-//        }
-//        // now set the alternate function
-//        //MAP_PinModeSet (self->pin_num, self->af);
-//    }
-//    //MAP_PinConfigSet(self->pin_num, self->strength, type);
-//    MAP_GPIOPadConfigSet(self->port, self->pin_num, self->strength, type);
 }
 
 //STATIC void pin_get_hibernate_pin_and_idx (const pin_obj_t *self, uint *hib_pin, uint *idx) {
@@ -404,8 +344,8 @@ STATIC void pin_obj_configure (const pin_obj_t *self) {
 //    }
 //}
 
-//STATIC void pin_irq_enable (mp_obj_t self_in) {
-//    const pin_obj_t *self = self_in;
+STATIC void pin_irq_enable (mp_obj_t self_in) {
+    const pin_obj_t *self = self_in;
 //    uint hib_pin, idx;
 //
 //    pin_get_hibernate_pin_and_idx (self, &hib_pin, &idx);
@@ -427,17 +367,17 @@ STATIC void pin_obj_configure (const pin_obj_t *self) {
 //    }
 //    // if idx is invalid, the pin supports active interrupts for sure
 //    if (idx >= PYBPIN_NUM_WAKE_PINS || pybpin_wake_pin[idx].active) {
-//        MAP_GPIOIntClear(self->port, self->bit);
-//        MAP_GPIOIntEnable(self->port, self->bit);
+        MAP_GPIOIntClear(self->port, self->bit);
+        MAP_GPIOIntEnable(self->port, self->bit);
 //    }
 //    // in case it was enabled before
 //    else if (idx < PYBPIN_NUM_WAKE_PINS && !pybpin_wake_pin[idx].active) {
 //        MAP_GPIOIntDisable(self->port, self->bit);
 //    }
-//}
+}
 
-//STATIC void pin_irq_disable (mp_obj_t self_in) {
-//    const pin_obj_t *self = self_in;
+STATIC void pin_irq_disable (mp_obj_t self_in) {
+    const pin_obj_t *self = self_in;
 //    uint hib_pin, idx;
 //
 //    pin_get_hibernate_pin_and_idx (self, &hib_pin, &idx);
@@ -451,45 +391,44 @@ STATIC void pin_obj_configure (const pin_obj_t *self) {
 //            MAP_PRCMHibernateWakeupSourceDisable(hib_pin);
 //        }
 //    }
-//    // not need to check for the active flag, it's safe to disable it anyway
-//    MAP_GPIOIntDisable(self->port, self->bit);
-//}
-//
-//STATIC int pin_irq_flags (mp_obj_t self_in) {
-//    const pin_obj_t *self = self_in;
-//    return self->irq_flags;
-//}
-//
-//STATIC void pin_extint_register(pin_obj_t *self, uint32_t intmode, uint32_t priority) {
-//    void *handler;
-//    uint32_t intnum;
-//
-//    // configure the interrupt type
-//    MAP_GPIOIntTypeSet(self->port, self->bit, intmode);
-//    switch (self->port) {
-//    case GPIOA0_BASE:
-//        handler = GPIOA0IntHandler;
-//        intnum = INT_GPIOA0;
-//        break;
-//    case GPIOA1_BASE:
-//        handler = GPIOA1IntHandler;
-//        intnum = INT_GPIOA1;
-//        break;
-//    case GPIOA2_BASE:
-//        handler = GPIOA2IntHandler;
-//        intnum = INT_GPIOA2;
-//        break;
-//    case GPIOA3_BASE:
-//    default:
-//        handler = GPIOA3IntHandler;
-//        intnum = INT_GPIOA3;
-//        break;
-//    }
-//    MAP_GPIOIntRegister(self->port, handler);
-//    // set the interrupt to the lowest priority, to make sure that
-//    // no other ISRs will be preemted by this one
-//    MAP_IntPrioritySet(intnum, priority);
-//}
+    // not need to check for the active flag, it's safe to disable it anyway
+    MAP_GPIOIntDisable(self->port, self->bit);
+}
+
+STATIC int pin_irq_flags (mp_obj_t self_in) {
+    const pin_obj_t *self = self_in;
+    return self->irq_flags;
+}
+
+STATIC void pin_extint_register(pin_obj_t *self, uint32_t intmode, uint32_t priority) {
+    //void *handler;
+    uint32_t intnum;
+
+    // configure the interrupt type
+    MAP_GPIOIntTypeSet(self->port, self->bit, intmode);
+    switch (self->port) {
+    case GPIO_PORTA_BASE:
+        intnum = INT_GPIOA_TM4C123;
+        break;
+    case GPIO_PORTB_BASE:
+        intnum = INT_GPIOB_TM4C123;
+        break;
+    case GPIO_PORTC_BASE:
+        intnum = INT_GPIOC_TM4C123;
+        break;
+    case GPIO_PORTD_BASE:
+        intnum = INT_GPIOD_TM4C123;
+    case GPIO_PORTE_BASE:
+        intnum = INT_GPIOE_TM4C123;
+    case GPIO_PORTF_BASE:
+    default:
+        intnum = INT_GPIOF_TM4C123;
+        break;
+    }
+    // set the interrupt to the lowest priority, to make sure that
+    // no other ISRs will be preemted by this one
+    MAP_IntPrioritySet(intnum, priority);
+}
 
 STATIC void pin_validate_mode (uint mode) {
     if (mode != GPIO_DIR_MODE_IN && mode != GPIO_DIR_MODE_OUT && 
@@ -545,46 +484,59 @@ STATIC uint8_t pin_get_value (const pin_obj_t* self) {
     return value ? 1 : 0;
 }
 
-//STATIC void GPIOA0IntHandler (void) {
-//    EXTI_Handler(GPIOA0_BASE);
-//}
-//
-//STATIC void GPIOA1IntHandler (void) {
-//    EXTI_Handler(GPIOA1_BASE);
-//}
-//
-//STATIC void GPIOA2IntHandler (void) {
-//    EXTI_Handler(GPIOA2_BASE);
-//}
-//
-//STATIC void GPIOA3IntHandler (void) {
-//    EXTI_Handler(GPIOA3_BASE);
-//}
-//
-//// common interrupt handler
-//STATIC void EXTI_Handler(uint port) {
-//    uint32_t bits = MAP_GPIOIntStatus(port, true);
-//    MAP_GPIOIntClear(port, bits);
-//
-//    // might be that we have more than one pin interrupt pending
-//    // therefore we must loop through all of the 8 possible bits
-//    for (int i = 0; i < 8; i++) {
-//        uint32_t bit = (1 << i);
-//        if (bit & bits) {
-//            pin_obj_t *self = (pin_obj_t *)pin_find_pin_by_port_bit(&pin_board_pins_locals_dict, port, bit);
-//            if (self->irq_trigger == (PYB_PIN_FALLING_EDGE | PYB_PIN_RISING_EDGE)) {
-//                // read the pin value (hoping that the pin level has remained stable)
-//                self->irq_flags = MAP_GPIOPinRead(self->port, self->bit) ? PYB_PIN_RISING_EDGE : PYB_PIN_FALLING_EDGE;
-//            } else {
-//                // same as the triggers
-//                self->irq_flags = self->irq_trigger;
-//            }
-//            mp_irq_handler(mp_irq_find(self));
-//            // always clear the flags after leaving the user handler
-//            self->irq_flags = 0;
-//        }
-//    }
-//}
+void GPIOPortA_Handler (void) {
+    EXTI_Handler(GPIO_PORTA_BASE);
+}
+
+void GPIOPortB_Handler (void) {
+    EXTI_Handler(GPIO_PORTB_BASE);
+}
+
+void GPIOPortC_Handler (void) {
+    EXTI_Handler(GPIO_PORTC_BASE);
+}
+
+void GPIOPortD_Handler (void) {
+    EXTI_Handler(GPIO_PORTD_BASE);
+}
+
+void GPIOPortE_Handler (void) {
+    EXTI_Handler(GPIO_PORTE_BASE);
+}
+
+void GPIOPortF_Handler (void) {
+    EXTI_Handler(GPIO_PORTF_BASE);
+}
+
+
+
+
+ 
+
+// common interrupt handler
+STATIC void EXTI_Handler(uint port) {
+    uint32_t bits = MAP_GPIOIntStatus(port, true);
+    MAP_GPIOIntClear(port, bits);
+
+    // might be that we have more than one pin interrupt pending
+    // therefore we must loop through all of the 8 possible bits
+    for (int i = 0; i < 8; i++) {
+        uint32_t bit = (1 << i);
+        if (bit & bits) {
+            pin_obj_t *self = (pin_obj_t *)pin_find_pin_by_port_bit(&pin_board_pins_locals_dict, port, bit);
+            if (self->irq_trigger == (PYB_PIN_FALLING_EDGE | PYB_PIN_RISING_EDGE)) {
+                // read the pin value (hoping that the pin level has remained stable)
+                self->irq_flags = MAP_GPIOPinRead(self->port, self->bit) ? PYB_PIN_RISING_EDGE : PYB_PIN_FALLING_EDGE;
+            } else {
+                // same as the triggers
+                self->irq_flags = self->irq_trigger;
+            }
+            mp_irq_handler(mp_irq_find(self));
+            // always clear the flags after leaving the user handler
+            self->irq_flags = 0;
+        }
+    }
+}
 
 
 /******************************************************************************/
@@ -958,12 +910,12 @@ STATIC mp_obj_t pin_irq (mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *k
 //        pybpin_wake_pin[idx].hib = PYBPIN_WAKES_NOT;
 //    }
 //
-//    // we need to update the callback atomically, so we disable the
-//    // interrupt before we update anything.
-//    pin_irq_disable(self);
+    // we need to update the callback atomically, so we disable the
+    // interrupt before we update anything.
+    pin_irq_disable(self);
 //    if (pwrmode & PYB_PWR_MODE_ACTIVE) {
-//        // register the interrupt
-//        pin_extint_register((pin_obj_t *)self, trigger, priority);
+        // register the interrupt
+        pin_extint_register((pin_obj_t *)self, trigger, priority);
 //        if (idx < PYBPIN_NUM_WAKE_PINS) {
 //            pybpin_wake_pin[idx].active = true;
 //        }
@@ -971,20 +923,20 @@ STATIC mp_obj_t pin_irq (mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *k
 //        pybpin_wake_pin[idx].active = false;
 //    }
 //
-//    // all checks have passed, we can create the irq object
-//    mp_obj_t _irq = mp_irq_new (self, args[2].u_obj, &pin_irq_methods);
+    // all checks have passed, we can create the irq object
+    mp_obj_t _irq = mp_irq_new (self, args[2].u_obj, &pin_irq_methods);
 //    if (pwrmode & PYB_PWR_MODE_LPDS) {
 //        pyb_sleep_set_gpio_lpds_callback (_irq);
 //    }
 //
-//    // save the mp_trigge for later
-//    self->irq_trigger = mp_trigger;
-//
-//    // enable the interrupt just before leaving
-//    pin_irq_enable(self);
-//
-//    return _irq;
-//
+    // save the mp_trigge for later
+    self->irq_trigger = mp_trigger;
+
+    // enable the interrupt just before leaving
+    pin_irq_enable(self);
+
+    return _irq;
+
 invalid_args:
     nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, mpexception_value_invalid_arguments));
 }
@@ -1000,7 +952,7 @@ STATIC const mp_map_elem_t pin_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_type),                    (mp_obj_t)&pin_type_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_drive),                   (mp_obj_t)&pin_drive_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_alt_list),                (mp_obj_t)&pin_alt_list_obj },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_irq),                     (mp_obj_t)&pin_irq_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_irq),                     (mp_obj_t)&pin_irq_obj },
 
     // class attributes
     { MP_OBJ_NEW_QSTR(MP_QSTR_board),                   (mp_obj_t)&pin_board_pins_obj_type },
@@ -1019,10 +971,10 @@ STATIC const mp_map_elem_t pin_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_LOW_POWER),               MP_OBJ_NEW_SMALL_INT(GPIO_STRENGTH_2MA) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_MED_POWER),               MP_OBJ_NEW_SMALL_INT(GPIO_STRENGTH_4MA) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_HIGH_POWER),              MP_OBJ_NEW_SMALL_INT(GPIO_STRENGTH_8MA) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_FALLING),             MP_OBJ_NEW_SMALL_INT(PYB_PIN_FALLING_EDGE) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_RISING),              MP_OBJ_NEW_SMALL_INT(PYB_PIN_RISING_EDGE) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_LOW_LEVEL),           MP_OBJ_NEW_SMALL_INT(PYB_PIN_LOW_LEVEL) },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_HIGH_LEVEL),          MP_OBJ_NEW_SMALL_INT(PYB_PIN_HIGH_LEVEL) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_FALLING),             MP_OBJ_NEW_SMALL_INT(PYB_PIN_FALLING_EDGE) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_RISING),              MP_OBJ_NEW_SMALL_INT(PYB_PIN_RISING_EDGE) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_LOW_LEVEL),           MP_OBJ_NEW_SMALL_INT(PYB_PIN_LOW_LEVEL) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IRQ_HIGH_LEVEL),          MP_OBJ_NEW_SMALL_INT(PYB_PIN_HIGH_LEVEL) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(pin_locals_dict, pin_locals_dict_table);
@@ -1036,12 +988,12 @@ const mp_obj_type_t pin_type = {
     .locals_dict = (mp_obj_t)&pin_locals_dict,
 };
 
-//STATIC const mp_irq_methods_t pin_irq_methods = {
-//    .init = pin_irq,
-//    .enable = pin_irq_enable,
-//    .disable = pin_irq_disable,
-//    .flags = pin_irq_flags,
-//};
+STATIC const mp_irq_methods_t pin_irq_methods = {
+    .init = pin_irq,
+    .enable = pin_irq_enable,
+    .disable = pin_irq_disable,
+    .flags = pin_irq_flags,
+};
 
 STATIC void pin_named_pins_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     pin_named_pins_obj_t *self = self_in;

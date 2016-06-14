@@ -117,6 +117,7 @@ void MP_WEAK __assert_func(const char *file, int line, const char *func, const c
 
 // this is a minimal IRQ and reset framework for any Cortex-M CPU
 
+
 extern uint32_t _estack, _sidata, _sdata, _edata, _sbss, _ebss;
 
 void Reset_Handler(void) __attribute__((naked));
@@ -141,23 +142,61 @@ void Default_Handler(void) {
     }
 }
 
+extern void GPIOPortA_Handler(void);
+extern void GPIOPortB_Handler(void);
+extern void GPIOPortC_Handler(void);
+extern void GPIOPortD_Handler(void);
+extern void GPIOPortE_Handler(void);
+extern void GPIOPortF_Handler(void);
+
 uint32_t isr_vector[] __attribute__((section(".isr_vector"))) = {
     (uint32_t)&_estack,
     (uint32_t)&Reset_Handler,
-    (uint32_t)&Default_Handler, // NMI_Handler
-    (uint32_t)&Default_Handler, // HardFault_Handler
-    (uint32_t)&Default_Handler, // MemManage_Handler
-    (uint32_t)&Default_Handler, // BusFault_Handler
-    (uint32_t)&Default_Handler, // UsageFault_Handler
+    (uint32_t)&Default_Handler,   // NMI_Handler
+    (uint32_t)&Default_Handler,   // HardFault_Handler
+    (uint32_t)&Default_Handler,   // MemManage_Handler
+    (uint32_t)&Default_Handler,   // BusFault_Handler
+    (uint32_t)&Default_Handler,   // UsageFault_Handler
     0,
     0,
     0,
     0,
-    (uint32_t)&Default_Handler, // SVC_Handler
-    (uint32_t)&Default_Handler, // DebugMon_Handler
+    (uint32_t)&Default_Handler,   // SVC_Handler
+    (uint32_t)&Default_Handler,   // DebugMon_Handler
     0,
-    (uint32_t)&Default_Handler, // PendSV_Handler
-    (uint32_t)&Default_Handler, // SysTick_Handler
+    (uint32_t)&Default_Handler,   // PendSV_Handler
+    (uint32_t)&Default_Handler,   // SysTick_Handler
+    (uint32_t)&GPIOPortA_Handler, // GPIO Port A
+    (uint32_t)&GPIOPortB_Handler, // GPIO Port B
+    (uint32_t)&GPIOPortC_Handler, // GPIO Port C
+    (uint32_t)&GPIOPortD_Handler, // GPIO Port D
+    (uint32_t)&GPIOPortE_Handler, // GPIO Port E
+    0,                            // UART0 Rx and Tx
+    0,                            // UART1 Rx and Tx
+    0,                            // SSI0 Rx and Tx
+    0,                            // I2C0 Master and Slave
+    0,                            // PWM 0 Fault
+    0,                            // PWM 0 Generator 0
+    0,                            // PWM 0 Generator 1
+    0,                            // PWM 0 Generator 2
+    0,                            // Quadrature Encoder 0
+    0,                            // ADC0 Sequence 0
+    0,                            // ADC0 Sequence 1
+    0,                            // ADC0 Sequence 2
+    0,                            // ADC0 Sequence 3
+    0,                            // Watchdog
+    0,                            // Timer 0 subtimer A
+    0,                            // Timer 0 subtimer B
+    0,                            // Timer 1 subtimer A
+    0,                            // Timer 1 subtimer B
+    0,                            // Timer 2 subtimer A
+    0,                            // Timer 2 subtimer B
+    0,                            // Analog Comp 0
+    0,                            // Analog Comp 1
+    0,                            // Analog Comp 2
+    0,                            // System Control
+    0,                            // Flash Control
+    (uint32_t)&GPIOPortF_Handler, // GPIO Port F
 };
 
 void _start(void) {

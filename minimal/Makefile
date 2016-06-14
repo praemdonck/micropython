@@ -85,11 +85,15 @@ APP_MISC_SRC_C = $(addprefix misc/,\
 	mpirq.c \
 	)
 
+APP_HAL_SRC_C = $(addprefix hal/,\
+	gpio.c \
+	)
+
 
 # List of sources for qstr extraction
 SRC_QSTR += $(APP_MODS_SRC_C) $(APP_MISC_SRC_C) #$(APP_STM_SRC_C)
 
-OBJ = $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o) $(SRC_S:.s=.o) $(APP_MODS_SRC_C:.c=.o) $(APP_MISC_SRC_C:.c=.o))
+OBJ = $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o) $(SRC_S:.s=.o) $(APP_MODS_SRC_C:.c=.o) $(APP_MISC_SRC_C:.c=.o) $(APP_HAL_SRC_C:.c=.o))
 #OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 
 ifeq ($(CROSS), 1)
