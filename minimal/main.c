@@ -13,6 +13,7 @@
 
 #include "inc/hw_memmap.h"
 #include "pybpin.h"
+#include "mpirq.h"
 
 #include "gccollect.h"
 #include "gchelper.h"
@@ -59,6 +60,8 @@ int main(int argc, char **argv) {
 
 
     pin_init0();
+    mp_irq_init0();
+
     #if MICROPY_REPL_EVENT_DRIVEN
     pyexec_event_repl_init();
     for (;;) {
@@ -419,6 +422,8 @@ void stm32_init(void) {
     GPIOF->DIR = 0x0E;
     GPIOF->DEN = 0x0E;
     GPIOF->DATA = 0x02;
+
+    asm volatile ("cpsie i");
 }
 
 
